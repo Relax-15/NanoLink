@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using NanoLink.DTOs;
 using NanoLink.Models;
+using NanoLink.Services;
+using System;
 
 namespace NanoLink
 {
@@ -17,6 +19,7 @@ namespace NanoLink
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             builder.Services.AddDbContext<ApiDbContext>(options => options.UseSqlite(connectionString));
 
+            builder.Services.AddScoped<UrlShorteningService>();
             var app = builder.Build();
 
             if (app.Environment.IsDevelopment())
@@ -26,55 +29,70 @@ namespace NanoLink
             }
 
             app.UseHttpsRedirection();
-            
-            app.MapPost("/shorturl", async (UrlDto urlDto, ApiDbContext context, HttpContext http) =>
+
+            app.MapPost("/shorturl", async (
+                UrlRequestDto request, ApiDbContext context,
+                HttpContext http, UrlShorteningService urlService) =>
             {
                 //validating the input URL
-                if (!Uri.TryCreate(urlDto.Url, UriKind.Absolute, out var inputUri))
-                    return Results.BadRequest("Invalid URL");
-                
-                // CReate the short version of URL
-                var random = new Random();
-                const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-                var randomString = new string(Enumerable.Repeat(chars, 6)
-                    .Select(x => x[random.Next(x.Length)]).ToArray());
+                if (!Uri.TryCreate(request.Url, UriKind.Absolute, out _))
+                    return Results.BadRequest("Invalid URL specified");
 
-                // Map the short url with long one
+                // Create the short version of URL
+
+                var code = await urlService.GenerateUniqueCode();
+
                 var shortUrl = new ShortenedUrl()
                 {
-                    Url = urlDto.Url,
-                    ShortUrl = randomString
+                    Id = Guid.NewGuid(),
+                    Url = request.Url,
+                    Code = code,
+                    ShortUrl = $"{http.Request.Scheme}://{http.Request.Host}/{code}",
+                    CreatedOnUtc = DateTime.UtcNow
                 };
 
                 // save to DB
                 context.ShortenedUrls.Add(shortUrl);
-                context.SaveChangesAsync();
-                
+                await context.SaveChangesAsync();
+
                 // construct the url
                 var result = $"{http.Request.Scheme}://{http.Request.Host}/{shortUrl.ShortUrl}";
 
-                return Results.Ok(new UrlResponseDto()
-                {
-                    ShortUrl = result
-                });
-                
-            });
+                return Results.Ok(shortUrl.ShortUrl);
+            }
+            );
 
-            app.MapFallback(async (ApiDbContext context, HttpContext http) =>
+            app.MapGet("{code}", async (string code, ApiDbContext context) =>
             {
-                var path = http.Request.Path.ToUriComponent().Trim('/');
+                var shortenedUrl = await context
+                    .ShortenedUrls
+                    .SingleOrDefaultAsync(s => s.Code == code);
 
-                var urlMatch = await context.ShortenedUrls.FirstOrDefaultAsync(x => x.ShortUrl.Trim() == path.Trim());
-
-                if (urlMatch == null) 
+                if (shortenedUrl is null)
                 {
-                    return Results.BadRequest("Invalid url");  
+                    return Results.NotFound();
                 }
 
-                return Results.Redirect(urlMatch.Url);
+                return Results.Redirect(shortenedUrl.Url);
             });
-            
+
+            //app.MapFallback(async (ApiDbContext context, HttpContext http) =>
+            //{
+            //    var path = http.Request.Path.ToUriComponent().Trim('/');
+
+            //    var urlMatch = await context.ShortenedUrls.FirstOrDefaultAsync(x => x.ShortUrl.Trim() == path.Trim());
+
+            //    if (urlMatch == null)
+            //    {
+            //        return Results.BadRequest("Invalid url");
+            //    }
+
+            //    return Results.Redirect(urlMatch.Url);
+            //});
+
             app.Run();
         }
+        
     }
 }
+
