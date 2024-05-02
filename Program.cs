@@ -34,11 +34,11 @@ namespace NanoLink
             builder.Services.AddScoped<UrlShorteningService>();
             var app = builder.Build();
 
-            //if (app.Environment.IsDevelopment())
-            //{
-            //    app.UseSwagger();
-            //    app.UseSwaggerUI();
-            //}
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
 
             app.UseHttpsRedirection();
 
@@ -106,11 +106,6 @@ namespace NanoLink
             //});
 
             app.UseCors("AllowSpecificOrigin");
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            }
-        );
             app.Run();
 
         }
