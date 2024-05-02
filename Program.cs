@@ -15,6 +15,18 @@ namespace NanoLink
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowSpecificOrigin",
+                    builder =>
+                    {
+                        builder.WithOrigins(
+                            "http://localhost:4200",
+                            "chrome-extension://fiijjhbifgdgdnnfcdibkjnnegkgbfgg") // Specify the allowed origin(s)
+                            .AllowAnyHeader()
+                            .AllowAnyMethod();
+                    });
+            });
 
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             builder.Services.AddDbContext<ApiDbContext>(options => options.UseSqlite(connectionString));
@@ -35,8 +47,8 @@ namespace NanoLink
                 HttpContext http, UrlShorteningService urlService) =>
             {
                 //validating the input URL
-                if (!Uri.TryCreate(request.Url, UriKind.Absolute, out _))
-                    return Results.BadRequest("Invalid URL specified");
+                //if (!Uri.TryCreate(request.Url, UriKind.Absolute, out _))
+                //    return Results.BadRequest("Invalid URL specified");
 
                 // Create the short version of URL
 
@@ -90,6 +102,7 @@ namespace NanoLink
             //    return Results.Redirect(urlMatch.Url);
             //});
 
+            app.UseCors("AllowSpecificOrigin");
             app.Run();
         }
         
