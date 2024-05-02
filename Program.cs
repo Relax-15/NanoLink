@@ -88,6 +88,9 @@ namespace NanoLink
                 return Results.Redirect(shortenedUrl.Url);
             });
 
+            app.MapGet("/allUrls", async (ApiDbContext db) =>  await db.ShortenedUrls.ToListAsync());
+
+
             //app.MapFallback(async (ApiDbContext context, HttpContext http) =>
             //{
             //    var path = http.Request.Path.ToUriComponent().Trim('/');
