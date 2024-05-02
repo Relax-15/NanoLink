@@ -106,7 +106,13 @@ namespace NanoLink
             //});
 
             app.UseCors("AllowSpecificOrigin");
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            }
+        );
             app.Run();
+
         }
         
     }
