@@ -3,14 +3,9 @@ using NanoLink.Services;
 
 namespace NanoLink.Models
 {
-    public class ApiDbContext : DbContext
+    public class ApiDbContext(DbContextOptions<ApiDbContext> options) : DbContext(options)
     {
         public virtual DbSet<ShortenedUrl> ShortenedUrls { get; set; }
-
-        public ApiDbContext(DbContextOptions<ApiDbContext> options ) : base(options)
-        {
-            
-        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

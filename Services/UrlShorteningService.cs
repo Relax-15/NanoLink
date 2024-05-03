@@ -7,15 +7,11 @@ namespace NanoLink.Services;
     // handles generating unique codes.
     // This service generates a random string of the specified length using our predefined chars.
     // It checks against the database to ensure uniqueness.
-public class UrlShorteningService
+public class UrlShorteningService(ApiDbContext context)
 {
     private readonly Random _random = new();
-    private readonly ApiDbContext _context;
+    private readonly ApiDbContext _context = context;
 
-    public UrlShorteningService(ApiDbContext context)
-    {
-        _context = context;
-    }
     public async Task<string> GenerateUniqueCode()
     {
         var codeChars = new char[ShortLinkSettings.Length];

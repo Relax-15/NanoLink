@@ -59,7 +59,7 @@ namespace NanoLink
                     Id = Guid.NewGuid(),
                     Url = request.Url,
                     Code = code,
-                    ShortUrl = $"{http.Request.Scheme}://{http.Request.Host}/{code}",
+                    ShortUrl = $"{http.Request.Scheme}://nnl.cc/{code}",
                     CreatedOnUtc = DateTime.UtcNow
                 };
 
